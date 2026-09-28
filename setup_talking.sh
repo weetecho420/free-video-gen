@@ -40,6 +40,13 @@ dl https://github.com/xinntao/facexlib/releases/download/v0.1.0/detection_Resnet
 dl https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth           $W/GFPGANv1.4.pth
 dl https://github.com/xinntao/facexlib/releases/download/v0.2.2/parsing_parsenet.pth       $W/parsing_parsenet.pth
 
+# --- Lip-sync for moving (cinematic) videos: Wav2Lip ---
+[ -d Wav2Lip ] || git clone --depth 1 https://github.com/Rudrabha/Wav2Lip.git
+mkdir -p Wav2Lip/checkpoints
+# sharper "GAN" version first, plain version as backup
+dl https://huggingface.co/camenduru/Wav2Lip/resolve/main/checkpoints/wav2lip_gan.pth Wav2Lip/checkpoints/wav2lip_gan.pth
+dl https://github.com/Winfredy/SadTalker/releases/download/v0.0.2/wav2lip.pth       Wav2Lip/checkpoints/wav2lip.pth
+
 echo "Checking setup..."
 python - <<'EOF'
 ok = True

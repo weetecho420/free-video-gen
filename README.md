@@ -5,6 +5,7 @@ Make short AI videos **for free** — with **English and Tagalog voices**.
 | Tab | What you give it | What you get |
 |---|---|---|
 | 🗣️ **Talking character** | A picture with a face + a script | The character **speaks your script** with lip-sync |
+| 🎥 **Cinematic talking** | A picture + motion prompt + script | Body & camera **move like a movie** AND the character talks with lip-sync |
 | 🎙️ **Video + voice-over** | A picture + motion prompt + script | A **moving video** with a narrator voice |
 | 🎬 **Silent video** | A picture + motion prompt | A ~10-second moving video |
 
@@ -39,18 +40,20 @@ You can also **upload or record your own voice** in the Talking character tab.
 ## How long it takes (free T4 GPU)
 
 - Talking character (10s): ~1–3 minutes
+- Cinematic talking (10s): ~10–20 minutes
 - Moving video (10s): ~5–15 minutes (first time also downloads ~20 GB)
 
 ## What's inside
 
 - `app.py` — the web page (3 tabs)
 - `voice.py` — free text-to-speech (edge-tts, with gTTS as backup)
-- `talking.py` — lip-sync (SadTalker) + voice-over merge
+- `talking.py` — talking photo (SadTalker) + voice-over merge
+- `lipsync.py` — lip-sync on a moving video (Wav2Lip)
 - `generate.py` — image-to-video (LTX-Video)
 - `setup_talking.sh`, `patch_sadtalker.py` — installs SadTalker and fixes it for today's Python
 - `Free_Video_Generator.ipynb` — the Colab notebook (start here)
 
 ## Credits & licenses
 
-[LTX-Video](https://github.com/Lightricks/LTX-Video) · [SadTalker](https://github.com/OpenTalker/SadTalker) (Apache-2.0) · [GFPGAN](https://github.com/TencentARC/GFPGAN) · [edge-tts](https://github.com/rany2/edge-tts).
+[LTX-Video](https://github.com/Lightricks/LTX-Video) · [SadTalker](https://github.com/OpenTalker/SadTalker) (Apache-2.0) · [Wav2Lip](https://github.com/Rudrabha/Wav2Lip) (non-commercial research license) · [GFPGAN](https://github.com/TencentARC/GFPGAN) · [edge-tts](https://github.com/rany2/edge-tts).
 Check each model's license before commercial use. Only use pictures and voices you have permission to use.
