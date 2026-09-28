@@ -53,6 +53,12 @@ def make_talking_video(
     if still:
         cmd.append("--still")
     if enhance_face:
+        try:
+            import gfpgan  # noqa: F401
+        except Exception:
+            print("Face sharpening not available – continuing without it.")
+            enhance_face = False
+    if enhance_face:
         cmd += ["--enhancer", "gfpgan"]
 
     print("Making talking video... (about 1-3 minutes per 10 seconds on a free T4)")

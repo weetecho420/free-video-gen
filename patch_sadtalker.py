@@ -49,6 +49,12 @@ patch(pathlib.Path("src/utils/preprocess.py"), [
     (r"np\.array\(\[float\(item\) for item in np\.hsplit\(trans_params, 5\)\]\)",
      "np.asarray(trans_params, dtype=np.float64).reshape(-1)[:5]"),
 ])
+# 2c) don't crash if the optional face-sharpening package (gfpgan) is missing
+patch(pathlib.Path("src/utils/face_enhancer.py"), [
+    (r"\nfrom gfpgan import GFPGANer\n",
+     "\ntry:\n    from gfpgan import GFPGANer\nexcept Exception:\n    GFPGANer = None\n"),
+])
+
 # 3) basicsr imports a torchvision module that no longer exists
 dirs = set(site.getsitepackages() + [site.getusersitepackages(), sysconfig.get_paths()["purelib"]])
 for d in dirs:
