@@ -14,6 +14,25 @@ from voice import VOICES, DEFAULT_VOICE, make_voice, audio_seconds
 VOICE_NAMES = list(VOICES.keys())
 
 
+
+FRIENDLY = {
+    "OUT_OF_RAM": "The free Colab ran out of computer memory (RAM) while loading the video model. "
+                  "Try again with a shorter video (5–6 seconds) and 'Max resolution' 384. "
+                  "If it keeps happening, use Kaggle (more free memory) – ask Claude how.",
+    "OUT_OF_GPU": "The free GPU ran out of memory. Try a shorter video (5–6 seconds) or lower resolution.",
+    "OUT_OF_DISK": "Colab's disk is full. Runtime → Disconnect and delete runtime, then Run all again.",
+}
+
+
+def _make_video(*args, **kwargs):
+    """Run the video model safely; turn crashes into a clear message."""
+    from generate import generate_safe
+    try:
+        return generate_safe(*args, **kwargs)
+    except RuntimeError as e:
+        raise gr.Error(FRIENDLY.get(str(e), str(e)[:900]), duration=None)
+
+
 def _stamp():
     return time.strftime("%Y%m%d-%H%M%S")
 
@@ -42,7 +61,7 @@ def talking(image, script, voice, speed, own_audio, full_image, enhance, size, e
 # ---------- Tab: cinematic talking (moving body + lip-sync) ----------
 def cinematic(image, motion_prompt, script, voice, speed, own_audio, add_talking, sharpen):
     import math
-    from generate import generate
+    from generate import generate_safe
     from lipsync import make_lipsync_video
 
     if image is None:
@@ -63,7 +82,7 @@ def cinematic(image, motion_prompt, script, voice, speed, own_audio, add_talking
     if add_talking:
         prompt += ", the person is talking to the camera, natural lip and face movement"
 
-    moving = generate(image, prompt, output=f"moving_{tag}.mp4", seconds=video_secs)
+    moving = _make_video(image, prompt, output=f"moving_{tag}.mp4", seconds=video_secs, fps=12)
     final = make_lipsync_video(moving, audio, out_path=f"cinematic_{tag}.mp4", sharpen=sharpen)
     note = f"✅ Done! Voice {secs:.1f}s."
     if secs > 10:
@@ -73,7 +92,7 @@ def cinematic(image, motion_prompt, script, voice, speed, own_audio, add_talking
 
 # ---------- Tab 2: moving video + narrator ----------
 def voiceover(image, motion_prompt, script, voice, speed, seconds):
-    from generate import generate
+    from generate import generate_safe
     from talking import add_voiceover
 
     if image is None:
@@ -91,20 +110,20 @@ def voiceover(image, motion_prompt, script, voice, speed, seconds):
         note = (f"⚠️ Voice is {secs:.1f}s but video is {seconds}s – the end of the voice is cut. "
                 "Shorten the script or speed up the voice.")
 
-    silent = generate(image, motion_prompt, output=f"silent_{tag}.mp4", seconds=seconds)
+    silent = _make_video(image, motion_prompt, output=f"silent_{tag}.mp4", seconds=seconds)
     final = add_voiceover(silent, audio, out_path=f"voiceover_{tag}.mp4")
     return final, note or f"✅ Done! Voice length: {secs:.1f}s."
 
 
 # ---------- Tab 3: silent video ----------
 def silent(image, prompt, seconds, fps, steps, max_side, seed):
-    from generate import generate
+    from generate import generate_safe
 
     if image is None:
         raise gr.Error("Please upload an image first.")
     if not prompt or not prompt.strip():
         raise gr.Error("Please type a prompt describing the motion.")
-    return generate(image, prompt, output=f"video_{_stamp()}.mp4", seconds=seconds,
+    return _make_video(image, prompt, output=f"video_{_stamp()}.mp4", seconds=seconds,
                     fps=int(fps), steps=int(steps), max_side=int(max_side), seed=int(seed))
 
 

@@ -78,8 +78,19 @@ def get_pipe():
     if _pipe is None:
         device, dtype = _device_dtype()
         print("Loading video model (first time downloads ~10-20 GB)...")
+        from diffusers import AutoencoderKLLTXVideo, LTXVideoTransformer3DModel
+
+        # stream each big part straight onto the GPU so the computer's RAM stays low
+        dm = {"": device} if device == "cuda" else None
+        transformer = LTXVideoTransformer3DModel.from_pretrained(
+            MODEL_ID, subfolder="transformer", torch_dtype=dtype, low_cpu_mem_usage=True, device_map=dm)
+        _free()
+        vae = AutoencoderKLLTXVideo.from_pretrained(
+            MODEL_ID, subfolder="vae", torch_dtype=dtype, low_cpu_mem_usage=True, device_map=dm)
+        _free()
         _pipe = LTXImageToVideoPipeline.from_pretrained(
-            MODEL_ID, text_encoder=None, tokenizer=None, torch_dtype=dtype, low_cpu_mem_usage=True,
+            MODEL_ID, transformer=transformer, vae=vae, text_encoder=None, tokenizer=None,
+            torch_dtype=dtype,
         )
         _pipe.to(device)
         _pipe.vae.enable_tiling()  # saves memory when decoding frames
@@ -145,6 +156,36 @@ def generate(
     export_to_video(frames, output, fps=fps)
     print(f"Saved: {output}")
     return output
+
+
+def generate_safe(image_path, prompt, output="output.mp4", seconds=10, fps=16, steps=30,
+                  max_side=512, seed=42):
+    """
+    Same as generate(), but runs in a separate process. If the free GPU/RAM runs out,
+    only that process dies – the web page keeps running and shows a clear message.
+    """
+    import os
+    import subprocess
+    import sys
+
+    cmd = [sys.executable, os.path.abspath(__file__),
+           "--image", str(image_path), "--prompt", prompt, "--output", str(output),
+           "--seconds", str(seconds), "--fps", str(int(fps)), "--steps", str(int(steps)),
+           "--max-side", str(int(max_side)), "--seed", str(int(seed))]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    print(proc.stdout[-2000:])
+    if proc.returncode == 0 and os.path.exists(output):
+        return output
+    err = (proc.stderr or "")[-2500:]
+    print(err)
+    low = err.lower()
+    if proc.returncode in (-9, 137) or "killed" in low:
+        raise RuntimeError("OUT_OF_RAM")
+    if "out of memory" in low or "outofmemory" in low:
+        raise RuntimeError("OUT_OF_GPU")
+    if "no space left" in low:
+        raise RuntimeError("OUT_OF_DISK")
+    raise RuntimeError("Video generation failed:\n" + err[-1200:])
 
 
 if __name__ == "__main__":
